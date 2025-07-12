@@ -77,6 +77,42 @@ const getPortfolio = async (req, res) => {
     const results = [];
     let totalPortfolioValueUSD = 0;
 
+    // Fetch real-time prices from Blockchair API
+    const fetchPrice = async (blockchain) => {
+      try {
+        const config = {};
+        if (process.env.BLOCKCHAIR_API_KEY && process.env.BLOCKCHAIR_API_KEY !== 'your_blockchair_api_key_here') {
+          config.params = { key: process.env.BLOCKCHAIR_API_KEY };
+        }
+
+        const priceUrl = `https://api.blockchair.com/${blockchain}/stats`;
+        const priceResponse = await axios.get(priceUrl, config);
+
+        if (priceResponse.data && priceResponse.data.data) {
+          const price = priceResponse.data.data.market_price_usd || 0;
+          console.log(`Fetched price for ${blockchain}: $${price}`);
+          return price;
+        }
+
+        console.warn(`No price data found for ${blockchain}`);
+        return 0;
+      } catch (error) {
+        console.error(`Error fetching price for ${blockchain}:`, error.message);
+        // Return fallback prices if API fails
+        const fallbackPrices = {
+          'bitcoin': 110000,
+          'ethereum': 3000,
+          'dogecoin': 0.18,
+          'litecoin': 100,
+          'bitcoin-cash': 400
+        };
+        return fallbackPrices[blockchain] || 0;
+      }
+    };
+
+    // Cache prices to avoid multiple API calls for the same blockchain
+    const priceCache = {};
+
     // Loop through each address and fetch blockchain data from Blockchair API
     for (const addrObj of user.addresses) {
       try {
@@ -97,26 +133,32 @@ const getPortfolio = async (req, res) => {
           let balanceInMainUnit = 0;
           let estimatedValueUSD = 0;
 
+          // Get real-time price for this blockchain
+          if (!priceCache[addrObj.blockchain]) {
+            priceCache[addrObj.blockchain] = await fetchPrice(addrObj.blockchain);
+          }
+          const currentPrice = priceCache[addrObj.blockchain];
+
           switch (addrObj.blockchain) {
             case 'bitcoin':
               balanceInMainUnit = balance / 100000000; // satoshis to BTC
-              estimatedValueUSD = balanceInMainUnit * 110000; // Rough BTC price
+              estimatedValueUSD = balanceInMainUnit * currentPrice;
               break;
             case 'ethereum':
               balanceInMainUnit = balance / 1000000000000000000; // wei to ETH
-              estimatedValueUSD = balanceInMainUnit * 3000; // Rough ETH price
+              estimatedValueUSD = balanceInMainUnit * currentPrice;
               break;
             case 'dogecoin':
               balanceInMainUnit = balance / 100000000; // satoshis to DOGE
-              estimatedValueUSD = balanceInMainUnit * 0.18; // Rough DOGE price
+              estimatedValueUSD = balanceInMainUnit * currentPrice;
               break;
             case 'litecoin':
               balanceInMainUnit = balance / 100000000; // satoshis to LTC
-              estimatedValueUSD = balanceInMainUnit * 100; // Rough LTC price
+              estimatedValueUSD = balanceInMainUnit * currentPrice;
               break;
             case 'bitcoin-cash':
               balanceInMainUnit = balance / 100000000; // satoshis to BCH
-              estimatedValueUSD = balanceInMainUnit * 400; // Rough BCH price
+              estimatedValueUSD = balanceInMainUnit * currentPrice;
               break;
             default:
               balanceInMainUnit = balance;
@@ -132,6 +174,7 @@ const getPortfolio = async (req, res) => {
             balance: balanceInMainUnit,
             balanceRaw: balance,
             estimatedValueUSD: estimatedValueUSD.toFixed(2),
+            currentPrice: currentPrice,
             lastUpdated: new Date().toISOString()
           });
         } else {
@@ -180,7 +223,13 @@ const getTransactions = async (req, res) => {
 
     try {
       // Use the correct Blockchair API endpoint for transactions
-      const url = `https://api.blockchair.com/${addressObj.blockchain}/dashboards/address/${addressObj.address}?limit=10,0`;
+      let url;
+      if (addressObj.blockchain === 'ethereum') {
+        // For Ethereum, use a different endpoint structure
+        url = `https://api.blockchair.com/ethereum/dashboards/address/${addressObj.address}?transaction_details=true&limit=10`;
+      } else {
+        url = `https://api.blockchair.com/${addressObj.blockchain}/dashboards/address/${addressObj.address}?limit=10,0`;
+      }
 
       const config = {};
       if (process.env.BLOCKCHAIR_API_KEY && process.env.BLOCKCHAIR_API_KEY !== 'your_blockchair_api_key_here') {
@@ -189,51 +238,102 @@ const getTransactions = async (req, res) => {
 
       const response = await axios.get(url, config);
 
-      console.log(`API Response for ${addressObj.address}:`, response.data);
+      console.log(`API Response for ${addressObj.address}:`, JSON.stringify(response.data, null, 2));
+      console.log(`Used URL: ${url}`);
 
       if (response.data && response.data.data && response.data.data[addressObj.address]) {
         const addressData = response.data.data[addressObj.address];
-        const transactions = addressData.transactions || [];
+        let transactions = [];
+
+        // Handle different response structures for different blockchains
+        if (addressObj.blockchain === 'ethereum') {
+          // For Ethereum, transactions might be in a different structure
+          transactions = addressData.transactions || [];
+
+          // If no transactions array, check for other possible structures
+          if (transactions.length === 0 && addressData.calls) {
+            // Ethereum might have 'calls' instead of 'transactions'
+            transactions = addressData.calls || [];
+          }
+        } else {
+          transactions = addressData.transactions || [];
+        }
 
         console.log(`Found ${transactions.length} transactions for address ${addressObj.address}`);
         console.log(`Transactions:`, transactions);
+        console.log(`Address Data Keys:`, Object.keys(addressData));
 
         // If no transactions in address data, try the raw transactions endpoint
         if (transactions.length === 0) {
-          const txUrl = `https://api.blockchair.com/${addressObj.blockchain}/addresses/${addressObj.address}/transactions?limit=10`;
-          const txResponse = await axios.get(txUrl, config);
+          console.log(`No transactions found in dashboard data, trying raw transactions endpoint`);
 
-          if (txResponse.data && txResponse.data.data) {
-            const rawTransactions = txResponse.data.data;
+          try {
+            let txUrl;
+            // Use different endpoints for different blockchains
+            if (addressObj.blockchain === 'ethereum') {
+              // For Ethereum, try a different approach
+              txUrl = `https://api.blockchair.com/ethereum/dashboards/address/${addressObj.address}`;
+            } else {
+              txUrl = `https://api.blockchair.com/${addressObj.blockchain}/addresses/${addressObj.address}/transactions?limit=10`;
+            }
 
-            const formattedTransactions = rawTransactions.map(txHash => {
-              // For each transaction hash, we need to get detailed transaction data
-              return {
-                txId: txHash,
-                type: 'unknown', // We'll need to fetch details to determine this
-                amount: 0,
-                date: new Date().toISOString(),
-                blockHeight: 0
-              };
-            });
+            const txResponse = await axios.get(txUrl, config);
 
-            return res.status(200).json({
-              address: addressObj.address,
-              blockchain: addressObj.blockchain,
-              transactions: formattedTransactions,
-              totalTransactions: rawTransactions.length
-            });
+            console.log(`Raw transactions API response:`, JSON.stringify(txResponse.data, null, 2));
+
+            if (txResponse.data && txResponse.data.data) {
+              let rawTransactions = [];
+
+              if (addressObj.blockchain === 'ethereum') {
+                // For Ethereum, check if data exists in the response
+                const ethData = txResponse.data.data[addressObj.address];
+                if (ethData && ethData.transactions) {
+                  rawTransactions = ethData.transactions;
+                }
+              } else {
+                rawTransactions = txResponse.data.data;
+              }
+
+              if (rawTransactions.length > 0) {
+                const formattedTransactions = rawTransactions.map(txHash => {
+                  // For each transaction hash, we need to get detailed transaction data
+                  return {
+                    txId: txHash,
+                    type: 'unknown', // We'll need to fetch details to determine this
+                    amount: 0,
+                    date: new Date().toISOString(),
+                    blockHeight: 0
+                  };
+                });
+
+                return res.status(200).json({
+                  address: addressObj.address,
+                  blockchain: addressObj.blockchain,
+                  transactions: formattedTransactions,
+                  totalTransactions: rawTransactions.length
+                });
+              }
+            }
+          } catch (rawTxError) {
+            console.error(`Raw transactions API error:`, rawTxError.message);
+            // Continue to the main transaction processing
           }
         }
 
         // Process transactions from dashboard data
         const formattedTransactions = [];
 
+        console.log(`Processing ${transactions.length} transactions from dashboard data`);
+
         for (const txHash of transactions.slice(0, 10)) {
           try {
             // Get detailed transaction data
             const txDetailUrl = `https://api.blockchair.com/${addressObj.blockchain}/dashboards/transaction/${txHash}`;
+            console.log(`Fetching transaction details from: ${txDetailUrl}`);
+
             const txDetailResponse = await axios.get(txDetailUrl, config);
+
+            console.log(`Transaction detail response for ${txHash}:`, JSON.stringify(txDetailResponse.data, null, 2));
 
             if (txDetailResponse.data && txDetailResponse.data.data && txDetailResponse.data.data[txHash]) {
               const txData = txDetailResponse.data.data[txHash];
@@ -328,11 +428,17 @@ const getTransactions = async (req, res) => {
                 case 'ethereum':
                   // For Ethereum
                   console.log(`Ethereum transaction - sender: ${transaction.sender}, recipient: ${transaction.recipient}, value: ${transaction.value}`);
+                  console.log(`Current address: ${addressObj.address}`);
 
-                  if (transaction.sender === addressObj.address) {
+                  // Normalize addresses to lowercase for comparison
+                  const normalizedAddress = addressObj.address.toLowerCase();
+                  const normalizedSender = transaction.sender ? transaction.sender.toLowerCase() : '';
+                  const normalizedRecipient = transaction.recipient ? transaction.recipient.toLowerCase() : '';
+
+                  if (normalizedSender === normalizedAddress) {
                     type = 'send';
                     amount = parseInt(transaction.value || 0) / 1000000000000000000; // wei to ETH
-                  } else if (transaction.recipient === addressObj.address) {
+                  } else if (normalizedRecipient === normalizedAddress) {
                     type = 'receive';
                     amount = parseInt(transaction.value || 0) / 1000000000000000000; // wei to ETH
                   }
@@ -379,16 +485,63 @@ const getTransactions = async (req, res) => {
           totalTransactions: transactions.length
         });
       } else {
+        console.log(`No address data found in API response for ${addressObj.address}`);
+        console.log(`Full API response:`, JSON.stringify(response.data, null, 2));
+
+        // Check if it's an Ethereum address issue
+        if (addressObj.blockchain === 'ethereum') {
+          console.log('Ethereum address detected - checking if address is valid...');
+
+          // Validate Ethereum address format
+          const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+          if (!ethAddressRegex.test(addressObj.address)) {
+            return res.status(400).json({
+              message: 'Invalid Ethereum address format',
+              error: 'Address must be a valid Ethereum address starting with 0x'
+            });
+          }
+        }
+
         res.status(200).json({
           address: addressObj.address,
           blockchain: addressObj.blockchain,
           transactions: [],
           totalTransactions: 0,
-          message: 'No transaction data available'
+          message: 'No transaction data available - this address may not have any transactions or may be inactive'
         });
       }
     } catch (apiError) {
       console.error(`Transaction API error for ${addressObj.blockchain} address ${addressObj.address}:`, apiError.message);
+
+      // Handle specific error cases
+      if (apiError.response) {
+        const statusCode = apiError.response.status;
+        console.error(`API returned status code: ${statusCode}`);
+
+        switch (statusCode) {
+          case 430:
+            return res.status(429).json({
+              message: 'Rate limit exceeded. Please try again later or add a valid API key.',
+              error: 'Too many requests to Blockchair API'
+            });
+          case 404:
+            return res.status(404).json({
+              message: 'Address not found or has no transaction history',
+              error: 'Address may be invalid or inactive'
+            });
+          case 403:
+            return res.status(403).json({
+              message: 'API access denied. Please check your API key configuration.',
+              error: 'Authentication failed'
+            });
+          default:
+            return res.status(500).json({
+              message: 'Unable to fetch transaction data',
+              error: `API error: ${apiError.message}`
+            });
+        }
+      }
+
       res.status(500).json({
         message: 'Unable to fetch transaction data',
         error: apiError.message

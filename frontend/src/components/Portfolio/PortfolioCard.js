@@ -42,17 +42,17 @@ const PortfolioCard = ({ address, onDelete }) => {
 
   const formatBalance = (balance) => {
     if (typeof balance !== 'number') return '0';
-    return balance.toLocaleString('en-US', { 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: 8 
+    return balance.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 8
     });
   };
 
   const formatValue = (value) => {
     const numValue = parseFloat(value) || 0;
-    return numValue.toLocaleString('en-US', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    return numValue.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
   };
 
@@ -72,7 +72,7 @@ const PortfolioCard = ({ address, onDelete }) => {
             <p className="text-gray-600">{blockchainInfo.symbol}</p>
           </div>
         </div>
-        
+
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="text-gray-400 hover:text-red-500 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-100"
@@ -112,12 +112,17 @@ const PortfolioCard = ({ address, onDelete }) => {
               {formatBalance(address.balance)} {blockchainInfo.symbol}
             </p>
           </div>
-          
+
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <p className="text-gray-600 text-sm mb-1 font-medium">Estimated Value</p>
             <p className="text-2xl font-bold gradient-text">
               ${formatValue(address.estimatedValueUSD)}
             </p>
+            {address.currentPrice && (
+              <p className="text-sm text-gray-600 mt-1">
+                Current Price: ${formatValue(address.currentPrice)}
+              </p>
+            )}
           </div>
 
           {/* View Transactions Button */}
@@ -132,6 +137,13 @@ const PortfolioCard = ({ address, onDelete }) => {
               View Transactions
             </div>
           </button>
+
+          {/* Last Updated */}
+          {address.lastUpdated && (
+            <div className="text-xs text-gray-500 text-center mt-2">
+              Last updated: {new Date(address.lastUpdated).toLocaleString()}
+            </div>
+          )}
         </div>
       )}
 

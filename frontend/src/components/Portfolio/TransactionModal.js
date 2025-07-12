@@ -17,6 +17,7 @@ const TransactionModal = ({ isOpen, onClose, address, blockchain, addressId }) =
     setError('');
     try {
       const response = await portfolioAPI.getTransactions(addressId);
+      console.log('Frontend received transactions:', response.data);
       setTransactions(response.data.transactions || []);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch transactions');
@@ -28,15 +29,17 @@ const TransactionModal = ({ isOpen, onClose, address, blockchain, addressId }) =
 
   const formatAddress = (addr) => {
     if (!addr || addr === 'N/A') return 'N/A';
-    if (addr.length <= 16) return addr;
-    return `${addr.slice(0, 8)}...${addr.slice(-8)}`;
+    // Convert to string if it's not already a string
+    const addrStr = String(addr);
+    if (addrStr.length <= 16) return addrStr;
+    return `${addrStr.slice(0, 8)}...${addrStr.slice(-8)}`;
   };
 
   const formatAmount = (amount, type) => {
-    if (typeof amount !== 'number') return '0';
-    const formatted = amount.toLocaleString('en-US', { 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: 8 
+    if (typeof amount !== 'number' || isNaN(amount)) return '0';
+    const formatted = Math.abs(amount).toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 8
     });
     return type === 'send' ? `-${formatted}` : `+${formatted}`;
   };
@@ -199,7 +202,7 @@ const TransactionModal = ({ isOpen, onClose, address, blockchain, addressId }) =
                         </div>
                         <div className="mt-1">
                           <p className="text-sm text-gray-600 font-mono">
-                            TX: {formatAddress(tx.txId)}
+                            TX: {formatAddress(tx.txId || 'N/A')}
                           </p>
                         </div>
                       </div>
@@ -208,7 +211,7 @@ const TransactionModal = ({ isOpen, onClose, address, blockchain, addressId }) =
                       <p className={`text-lg font-bold ${tx.type === 'send' ? 'text-red-600' : 'text-green-600'}`}>
                         {formatAmount(tx.amount, tx.type)} {getBlockchainSymbol(blockchain)}
                       </p>
-                      {tx.blockHeight > 0 && (
+                      {tx.blockHeight && tx.blockHeight > 0 && (
                         <p className="text-sm text-gray-500">
                           Block #{tx.blockHeight.toLocaleString()}
                         </p>
