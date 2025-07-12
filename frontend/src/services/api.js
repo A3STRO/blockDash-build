@@ -49,6 +49,7 @@ export const portfolioAPI = {
   getPortfolio: () => apiClient.get('/portfolio'),
   addAddress: (addressData) => apiClient.post('/portfolio/address', addressData),
   deleteAddress: (addressId) => apiClient.delete(`/portfolio/address/${addressId}`),
+  getTransactions: (addressId) => apiClient.get(`/portfolio/transactions/${addressId}`),
 };
 
 export default apiClient;

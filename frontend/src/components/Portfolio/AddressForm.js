@@ -86,7 +86,7 @@ const AddressForm = ({ onAddressAdded }) => {
               className="w-full px-4 py-3 clean-input text-gray-900"
               required
             >
-              <option value="">Select a blockchain</option>
+              <option value="" disabled>Select a blockchain</option>
               {blockchains.map((blockchain) => (
                 <option key={blockchain.value} value={blockchain.value}>
                   {blockchain.label}

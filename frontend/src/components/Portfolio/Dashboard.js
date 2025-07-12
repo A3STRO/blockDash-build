@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { portfolioAPI } from '../../services/api';
 import AddressForm from './AddressForm';
 import PortfolioCard from './PortfolioCard';
+import TradingViewWidget from './TradingViewWidget';
 
 const Dashboard = () => {
   const [portfolio, setPortfolio] = useState([]);
@@ -10,7 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const { user, logout } = useAuth();
 
   const fetchPortfolio = async (showRefreshing = false) => {
@@ -18,7 +19,7 @@ const Dashboard = () => {
       if (showRefreshing) setRefreshing(true);
       const response = await portfolioAPI.getPortfolio();
       const { portfolio: portfolioData, totalPortfolioValueUSD } = response.data;
-      
+
       setPortfolio(portfolioData);
       setTotalValue(parseFloat(totalPortfolioValueUSD) || 0);
       setError('');
@@ -136,6 +137,23 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* TradingView Widget */}
+        <div className="mb-8">
+          <div className="clean-card p-6">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                Market Overview
+              </h2>
+              <p className="text-gray-600 text-center">
+                Live cryptocurrency prices and charts
+              </p>
+            </div>
+            <div className="h-96 rounded-xl overflow-hidden">
+              <TradingViewWidget />
+            </div>
+          </div>
+        </div>
+
         {/* Add Address Form */}
         <div className="mb-8">
           <AddressForm onAddressAdded={handleAddressAdded} />
@@ -144,7 +162,7 @@ const Dashboard = () => {
         {/* Portfolio List */}
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-gray-900">Your Addresses</h3>
-          
+
           {portfolio.length === 0 ? (
             <div className="clean-card p-12 text-center">
               <div className="mb-6">
