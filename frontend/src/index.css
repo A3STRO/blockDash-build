@@ -126,6 +126,11 @@ code {
   100% { transform: rotate(360deg); }
 }
 
+@keyframes spin-reverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
 /* Additional animations for glass morphism design */
 @keyframes fadeInUp {
   from {
@@ -286,5 +291,9 @@ code {
   .clean-card-hover:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .animate-spin-reverse {
+    animation: spin-reverse 1s linear infinite;
   }
 }
