@@ -12,7 +12,8 @@ const app = express();
 app.use(cors({
   origin: [
     'https://a3stro.engineer',
-    'https://www.a3stro.engineer'
+    'https://www.a3stro.engineer',
+    'http://localhost:3000'
   ],
   credentials: true
 }));
