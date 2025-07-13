@@ -116,7 +116,6 @@ const getPortfolio = async (req, res) => {
     // Loop through each address and fetch blockchain data from Blockchair API
     for (const addrObj of user.addresses) {
       try {
-        // Build API URL based on blockchain and address
         const url = `https://api.blockchair.com/${addrObj.blockchain}/dashboards/address/${addrObj.address}`;
 
         const config = {};
@@ -222,10 +221,8 @@ const getTransactions = async (req, res) => {
     }
 
     try {
-      // Use the correct Blockchair API endpoint for transactions
       let url;
       if (addressObj.blockchain === 'ethereum') {
-        // For Ethereum, use a different endpoint structure
         url = `https://api.blockchair.com/ethereum/dashboards/address/${addressObj.address}?transaction_details=true&limit=10`;
       } else {
         url = `https://api.blockchair.com/${addressObj.blockchain}/dashboards/address/${addressObj.address}?limit=10,0`;
@@ -245,9 +242,7 @@ const getTransactions = async (req, res) => {
         const addressData = response.data.data[addressObj.address];
         let transactions = [];
 
-        // Handle different response structures for different blockchains
         if (addressObj.blockchain === 'ethereum') {
-          // For Ethereum, transactions might be in a different structure
           transactions = addressData.transactions || [];
 
           // If no transactions array, check for other possible structures
@@ -269,9 +264,7 @@ const getTransactions = async (req, res) => {
 
           try {
             let txUrl;
-            // Use different endpoints for different blockchains
             if (addressObj.blockchain === 'ethereum') {
-              // For Ethereum, try a different approach
               txUrl = `https://api.blockchair.com/ethereum/dashboards/address/${addressObj.address}`;
             } else {
               txUrl = `https://api.blockchair.com/${addressObj.blockchain}/addresses/${addressObj.address}/transactions?limit=10`;
@@ -285,7 +278,6 @@ const getTransactions = async (req, res) => {
               let rawTransactions = [];
 
               if (addressObj.blockchain === 'ethereum') {
-                // For Ethereum, check if data exists in the response
                 const ethData = txResponse.data.data[addressObj.address];
                 if (ethData && ethData.transactions) {
                   rawTransactions = ethData.transactions;
@@ -296,7 +288,6 @@ const getTransactions = async (req, res) => {
 
               if (rawTransactions.length > 0) {
                 const formattedTransactions = rawTransactions.map(txHash => {
-                  // For each transaction hash, we need to get detailed transaction data
                   return {
                     txId: txHash,
                     type: 'unknown', // We'll need to fetch details to determine this
@@ -316,7 +307,6 @@ const getTransactions = async (req, res) => {
             }
           } catch (rawTxError) {
             console.error(`Raw transactions API error:`, rawTxError.message);
-            // Continue to the main transaction processing
           }
         }
 
@@ -426,7 +416,6 @@ const getTransactions = async (req, res) => {
                   break;
 
                 case 'ethereum':
-                  // For Ethereum
                   console.log(`Ethereum transaction - sender: ${transaction.sender}, recipient: ${transaction.recipient}, value: ${transaction.value}`);
                   console.log(`Current address: ${addressObj.address}`);
 
@@ -488,7 +477,6 @@ const getTransactions = async (req, res) => {
         console.log(`No address data found in API response for ${addressObj.address}`);
         console.log(`Full API response:`, JSON.stringify(response.data, null, 2));
 
-        // Check if it's an Ethereum address issue
         if (addressObj.blockchain === 'ethereum') {
           console.log('Ethereum address detected - checking if address is valid...');
 

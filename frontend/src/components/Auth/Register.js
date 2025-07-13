@@ -11,7 +11,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { setToken, setUser } = useAuth();
   const navigate = useNavigate();
 
@@ -54,7 +54,7 @@ const Register = () => {
       const { confirmPassword, ...registerData } = formData;
       const response = await authAPI.register(registerData);
       const { token, user } = response.data;
-      
+
       setToken(token);
       setUser(user);
       navigate('/dashboard');
@@ -71,7 +71,7 @@ const Register = () => {
         {/* Header */}
         <div className="text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-2">
-            Join Us <span className="gradient-text">Today</span>
+            Register <span className="gradient-text">Now</span>
           </h2>
           <p className="text-gray-600 text-lg">
             Create your <span className="gradient-text-purple">crypto portfolio</span> account
@@ -100,7 +100,7 @@ const Register = () => {
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Password
@@ -178,7 +178,6 @@ const Register = () => {
         {/* Additional info */}
         <div className="text-center">
           <p className="text-gray-400 text-sm">
-            Free • Secure • No Credit Card Required
           </p>
         </div>
       </div>

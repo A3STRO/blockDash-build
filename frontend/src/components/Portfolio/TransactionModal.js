@@ -29,7 +29,6 @@ const TransactionModal = ({ isOpen, onClose, address, blockchain, addressId }) =
 
   const formatAddress = (addr) => {
     if (!addr || addr === 'N/A') return 'N/A';
-    // Convert to string if it's not already a string
     const addrStr = String(addr);
     if (addrStr.length <= 16) return addrStr;
     return `${addrStr.slice(0, 8)}...${addrStr.slice(-8)}`;

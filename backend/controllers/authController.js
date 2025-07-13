@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const register = async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ message: 'Username and password are required.' });
     }
@@ -20,21 +20,18 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists.' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const newUser = new User({ 
-      username, 
-      password: hashedPassword, 
-      addresses: [] 
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      addresses: []
     });
     await newUser.save();
 
-    // Generate JWT token
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       message: 'User registered successfully',
       token,
       user: {
@@ -51,11 +48,11 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ message: 'Username and password are required.' });
     }
-    
+
     // Validate user
     const user = await User.findOne({ username });
     if (!user) {
@@ -67,10 +64,9 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials.' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       message: 'Login successful',
       token,
       user: {

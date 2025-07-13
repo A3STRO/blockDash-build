@@ -9,6 +9,9 @@ const AddressSchema = new mongoose.Schema({
   address: { type: String, required: true }
 }, { timestamps: true });
 
+// timestamps will automatically add createdAt and updatedAt fields
+// trim will remove whitespace from both ends of the string
+
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,

@@ -27,7 +27,6 @@ const PortfolioCard = ({ address, onDelete }) => {
       }
     } catch (err) {
       console.error('Delete error:', err);
-      // You could add error handling here
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);

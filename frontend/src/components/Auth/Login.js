@@ -50,9 +50,6 @@ const Login = () => {
           <h2 className="text-4xl font-bold text-gray-900 mb-2">
             Hi there, <span className="gradient-text">Welcome</span>
           </h2>
-          <p className="text-gray-600 text-lg">
-            What would you <span className="gradient-text-purple">like to access?</span>
-          </p>
           <p className="text-gray-500 text-sm mt-2">
             Sign in to your crypto portfolio account
           </p>
@@ -139,7 +136,6 @@ const Login = () => {
         {/* Additional info */}
         <div className="text-center">
           <p className="text-gray-400 text-sm">
-            Secure • Fast • Reliable
           </p>
         </div>
       </div>

@@ -5,21 +5,18 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Portfolio/Dashboard';
 
-// Modern Loading Component
 const ModernLoader = () => (
   <div className="min-h-screen bg-gradient-to-br from-primary-600 via-secondary-500 to-accent-600 flex items-center justify-center relative overflow-hidden">
-    {/* Floating background elements */}
+
     <div className="floating-element"></div>
     <div className="floating-element"></div>
     <div className="floating-element"></div>
     
-    {/* Main loading content */}
     <div className="glass-card rounded-2xl p-8 text-center animate-fade-in-up">
       <div className="spinner-large mx-auto mb-6"></div>
       <h3 className="text-xl font-semibold text-white mb-2">Loading...</h3>
       <p className="text-white/70">Please wait while we prepare your experience</p>
       
-      {/* Loading bar */}
       <div className="mt-6 w-48 h-1 bg-white/20 rounded-full overflow-hidden">
         <div className="h-full bg-white/60 rounded-full shimmer"></div>
       </div>
