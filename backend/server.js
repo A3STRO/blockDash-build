@@ -9,7 +9,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://www.a3stro.engineer',
+  credentials: true
+}));
 app.use(express.json());
 
 mongoose
